@@ -30,23 +30,23 @@ class Generator(nn.Module):
         )
 
     def forward(self, z):
-        h = self.l1(z[:, :self.base_latent_dim])\
+        h = self.l1(z[:, :self.base_latent_dim]) \
             .view(-1, self.ch, self.bottom_width, self.bottom_width)
-        
-        n1 = self.l2(z[:, self.base_latent_dim:self.base_latent_dim * 2])\
+
+        n1 = self.l2(z[:, self.base_latent_dim:self.base_latent_dim * 2]) \
             .view(-1, self.ch, self.bottom_width * 2, self.bottom_width * 2)
         if self.args.dataset == 'cifar10':
-            n2 = self.l3(z[:, self.base_latent_dim * 2:])\
+            n2 = self.l3(z[:, self.base_latent_dim * 2:]) \
                 .view(-1, self.ch, self.bottom_width * 4, self.bottom_width * 4)
-        
+
         h1_skip_out, h1 = self.cell1(h)
-        h2_skip_out, h2 = self.cell2(h1+n1, (h1_skip_out, ))
+        h2_skip_out, h2 = self.cell2(h1 + n1, (h1_skip_out,))
         if self.args.dataset == 'cifar10':
-            ___________, h3 = self.cell3(h2+n2, (h1_skip_out, h2_skip_out))
+            ___________, h3 = self.cell3(h2 + n2, (h1_skip_out, h2_skip_out))
         else:
             ___________, h3 = self.cell3(h2, (h1_skip_out, h2_skip_out))
         output = self.to_rgb(h3)
-  
+
         return output
 
 
@@ -63,7 +63,7 @@ class Discriminator(nn.Module):
         self.l5 = nn.Linear(self.ch, 1, bias=False)
         if args.d_spectral_norm:
             self.l5 = nn.utils.spectral_norm(self.l5)
-    
+
     def forward(self, x):
         h = x
         layers = [self.block1, self.block2, self.block3]
@@ -74,5 +74,5 @@ class Discriminator(nn.Module):
         # Global average pooling
         h = h.sum(2).sum(2)
         output = self.l5(h)
-      
+
         return output

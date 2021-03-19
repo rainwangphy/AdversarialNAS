@@ -21,12 +21,13 @@ def parse_args():
     parser.add_argument('--bottom_width', type=int, default=4, help='init resolution, 4 for cifar10, 6 for stl10')
     parser.add_argument('--channels', type=int, default=3, help='image channels')
     parser.add_argument('--data_path', type=str, default='./data', help='dataset path')
-    
+
     parser.add_argument('--exp_name', type=str, help='experiment name')
     parser.add_argument('--gpu_ids', type=str, help='visible GPU ids')
-    parser.add_argument('--num_workers', type=int, default=16, help='number of cpu threads to use during batch generation')
+    parser.add_argument('--num_workers', type=int, default=16,
+                        help='number of cpu threads to use during batch generation')
     parser.add_argument('--checkpoint', type=str, help='checkpoint path')
-    
+
     # train
     parser.add_argument('--arch', type=str, default='arch_cifar10', help='architecture name')
     # parser.add_argument('--arch_D', type=str, help='architecture name of D')
@@ -50,7 +51,7 @@ def parse_args():
     parser.add_argument('--g_spectral_norm', type=str2bool, default=False,
                         help='add spectral_norm on generator or not')
     parser.add_argument('--latent_dim', type=int, default=128, help='dimensionality of the latent space')
-    
+
     # val
     parser.add_argument('--print_freq', type=int, default=50, help='interval between each verbose')
     parser.add_argument('--val_freq', type=int, default=20, help='interval between each validation')

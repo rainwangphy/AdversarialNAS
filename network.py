@@ -14,7 +14,6 @@ import logging
 from utils.inception_score import get_inception_score
 from utils.fid_score import calculate_fid_given_paths
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -50,14 +49,13 @@ def train(args, gen_net: nn.Module, dis_net: nn.Module, gen_optimizer, dis_optim
 
         writer.add_scalar('d_loss', d_loss.item(), global_steps)
 
-
         # train G
         if global_steps % args.n_critic == 0:
             gen_optimizer.zero_grad()
-            
+
             # sample noise
             gen_z = torch.cuda.FloatTensor(np.random.normal(0, 1, (args.gen_bs, args.latent_dim)))
-            
+
             gen_imgs = gen_net(gen_z)
             fake_validity = dis_net(gen_imgs)
 
@@ -85,7 +83,8 @@ def train(args, gen_net: nn.Module, dis_net: nn.Module, gen_optimizer, dis_optim
         if gen_step and iter_idx % args.print_freq == 0:
             tqdm.write(
                 '[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]' %
-                (epoch, args.max_epoch_D, iter_idx % len(train_loader), len(train_loader), d_loss.item(), g_loss.item()))
+                (
+                epoch, args.max_epoch_D, iter_idx % len(train_loader), len(train_loader), d_loss.item(), g_loss.item()))
 
         writer_dict['train_global_steps'] = global_steps + 1
 
@@ -111,7 +110,8 @@ def validate(args, fixed_z, fid_stat, gen_net: nn.Module, writer_dict):
         z = torch.cuda.FloatTensor(np.random.normal(0, 1, (args.eval_batch_size, args.latent_dim)))
 
         # generate a batch of images
-        gen_imgs = gen_net(z).mul_(127.5).add_(127.5).clamp_(0.0, 255.0).permute(0, 2, 3, 1).to('cpu', torch.uint8).numpy()
+        gen_imgs = gen_net(z).mul_(127.5).add_(127.5).clamp_(0.0, 255.0).permute(0, 2, 3, 1).to('cpu',
+                                                                                                torch.uint8).numpy()
         for img_idx, img in enumerate(gen_imgs):
             file_name = os.path.join(fid_buffer_dir, f'iter{iter_idx}_b{img_idx}.png')
             imsave(file_name, img)
@@ -124,10 +124,10 @@ def validate(args, fixed_z, fid_stat, gen_net: nn.Module, writer_dict):
     # get fid score
     logger.info('=> calculate fid score')
     fid_score = calculate_fid_given_paths([fid_buffer_dir, fid_stat], inception_path=None)
-    
+
     # del buffer
     os.system('rm -r {}'.format(fid_buffer_dir))
-    
+
     writer.add_image('sampled_images', img_grid, global_steps)
     writer.add_scalar('Inception_score/mean', mean, global_steps)
     writer.add_scalar('Inception_score/std', std, global_steps)

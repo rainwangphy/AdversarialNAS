@@ -5,35 +5,33 @@
 from torch import nn
 import torch.nn.functional as F
 
-
 # 7
 PRIMITIVES = [
-  'none',
-  'skip_connect',
-  'conv_1x1',
-  'conv_3x3',
-  'conv_5x5',
-  'dil_conv_3x3',
-  'dil_conv_5x5'
+    'none',
+    'skip_connect',
+    'conv_1x1',
+    'conv_3x3',
+    'conv_5x5',
+    'dil_conv_3x3',
+    'dil_conv_5x5'
 ]
 
 # 3
 PRIMITIVES_up = [
-  'nearest',
-  'bilinear',
-  'ConvTranspose'
+    'nearest',
+    'bilinear',
+    'ConvTranspose'
 ]
 
 # 6
 PRIMITIVES_down = [
-  'avg_pool',
-  'max_pool',
-  'conv_3x3',
-  'conv_5x5',
-  'dil_conv_3x3',
-  'dil_conv_5x5'
+    'avg_pool',
+    'max_pool',
+    'conv_3x3',
+    'conv_5x5',
+    'dil_conv_3x3',
+    'dil_conv_5x5'
 ]
-
 
 # ------------------------------------------------------------------------------------------------------------------- #
 
@@ -62,6 +60,7 @@ UPS = {
     'ConvTranspose': lambda in_ch, out_ch: Up(in_ch, out_ch, mode='convT')
 }
 
+
 # ------------------------------------------------------------------------------------------------------------------- #
 
 class Conv(nn.Module):
@@ -75,7 +74,7 @@ class Conv(nn.Module):
             self.op = nn.Sequential(nn.ReLU(), self.conv)
         else:
             self.op = nn.Sequential(self.conv)
-            
+
     def forward(self, x):
         return self.op(x)
 
@@ -85,7 +84,7 @@ class DilConv(nn.Module):
         super(DilConv, self).__init__()
         if sn:
             self.dilconv = nn.utils.spectral_norm(
-              nn.Conv2d(in_ch, out_ch, kernel_size=kernel_size, stride=stride, padding=padding, dilation=dilation))
+                nn.Conv2d(in_ch, out_ch, kernel_size=kernel_size, stride=stride, padding=padding, dilation=dilation))
         else:
             self.dilconv = \
                 nn.Conv2d(in_ch, out_ch, kernel_size=kernel_size, stride=stride, padding=padding, dilation=dilation)
@@ -101,7 +100,7 @@ class DilConv(nn.Module):
 class Identity(nn.Module):
     def __init__(self):
         super(Identity, self).__init__()
-  
+
     def forward(self, x):
         return x
 
@@ -109,7 +108,7 @@ class Identity(nn.Module):
 class Zero(nn.Module):
     def __init__(self):
         super(Zero, self).__init__()
-  
+
     def forward(self, x):
         return x.mul(0.)
 
@@ -130,7 +129,7 @@ class Up(nn.Module):
                 nn.ReLU(),
                 nn.Conv2d(in_ch, out_ch, kernel_size=1)
             )
-      
+
     def forward(self, x):
         if self.up_mode == 'convT':
             return self.convT(x)
@@ -145,7 +144,7 @@ class Pool(nn.Module):
             self.pool = nn.AvgPool2d(kernel_size=2, stride=2, padding=0)
         elif mode == 'Max':
             self.pool = nn.MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1)
-    
+
     def forward(self, x):
         return self.pool(x)
 
@@ -157,7 +156,7 @@ class MixedOp(nn.Module):
         for primitive in primitives:
             op = OPS[primitive](in_ch, out_ch, stride, sn, act)
             self.ops.append(op)
-  
+
     def forward(self, x):
         return sum(op(x) for op in self.ops)
 
@@ -169,10 +168,10 @@ class MixedUp(nn.Module):
         for primitive in primitives:
             up = UPS[primitive](in_ch, out_ch)
             self.ups.append(up)
-    
+
     def forward(self, x):
         return sum(up(x) for up in self.ups)
-    
+
 
 class MixedDown(nn.Module):
     def __init__(self, in_ch, out_ch, stride, sn, act, primitives):
@@ -181,7 +180,7 @@ class MixedDown(nn.Module):
         for primitive in primitives:
             op = OPS_down[primitive](in_ch, out_ch, stride, sn, act)
             self.ops.append(op)
-    
+
     def forward(self, x):
         return sum(op(x) for op in self.ops)
 
@@ -192,7 +191,7 @@ class MixedDown(nn.Module):
 class Cell(nn.Module):
     def __init__(self, in_channels, out_channels, up_mode, genotype, num_skip_in=0, norm=None):
         super(Cell, self).__init__()
-    
+
         self.up0 = MixedUp(in_channels, out_channels, [PRIMITIVES_up[genotype[0]]])
         self.up1 = MixedUp(in_channels, out_channels, [PRIMITIVES_up[genotype[1]]])
         if genotype[2] > 0:
@@ -205,10 +204,10 @@ class Cell(nn.Module):
             self.c3 = MixedOp(out_channels, out_channels, 1, False, True, [PRIMITIVES[genotype[5]]])
         if genotype[6] > 0:
             self.c4 = MixedOp(out_channels, out_channels, 1, False, True, [PRIMITIVES[genotype[6]]])
-    
+
         self.up_mode = up_mode
         self.norm = norm
-        
+
         # no norm
         if norm:
             if norm == 'bn':
@@ -219,7 +218,7 @@ class Cell(nn.Module):
                 self.n2 = nn.InstanceNorm2d(out_channels)
             else:
                 raise NotImplementedError(norm)
-    
+
         # cross scale skip
         self.skip_in_ops = None
         if num_skip_in:
@@ -228,7 +227,7 @@ class Cell(nn.Module):
             )
 
     def forward(self, x, skip_ft=None):
-  
+
         node0 = self.up0(x)
         node1 = self.up1(x)
         _, _, ht, wt = node0.size()
@@ -240,16 +239,16 @@ class Cell(nn.Module):
                 node2 = node2 + self.c1(node1)
         else:
             node2 = self.c1(node1)
-        
+
         # skip out feat
         h_skip_out = node2
-        
+
         # skip in feat
         if self.skip_in_ops:
             assert len(self.skip_in_ops) == len(skip_ft)
             for ft, skip_in_op in zip(skip_ft, self.skip_in_ops):
                 node2 += skip_in_op(F.interpolate(ft, size=(ht, wt), mode=self.up_mode))
-        
+
         # for different topologies
         if hasattr(self, 'c2'):
             node3 = self.c2(node0)
@@ -261,13 +260,13 @@ class Cell(nn.Module):
                 if hasattr(self, 'c4'):
                     node3 = node3 + self.c4(node2)
         else:
-              if hasattr(self, 'c3'):
-                  node3 = self.c3(node1)
-                  if hasattr(self, 'c4'):
+            if hasattr(self, 'c3'):
+                node3 = self.c3(node1)
+                if hasattr(self, 'c4'):
                     node3 = node3 + self.c4(node2)
-              else:
-                  node3 = self.c4(node2)
-        
+            else:
+                node3 = self.c4(node2)
+
         # if hasattr(self, 'c3'):
         #     node3 = self.c2(node0) + self.c3(node1) + self.c4(node2)
         # else:
@@ -292,7 +291,7 @@ class OptimizedDisBlock(nn.Module):
             self.c1 = nn.utils.spectral_norm(self.c1)
             self.c2 = nn.utils.spectral_norm(self.c2)
             self.c_sc = nn.utils.spectral_norm(self.c_sc)
-  
+
     def residual(self, x):
         h = x
         h = self.c1(h)
@@ -300,10 +299,10 @@ class OptimizedDisBlock(nn.Module):
         h = self.c2(h)
         h = _downsample(h)
         return h
-    
+
     def shortcut(self, x):
         return self.c_sc(_downsample(x))
-    
+
     def forward(self, x):
         return self.residual(x) + self.shortcut(x)
 
@@ -317,28 +316,28 @@ class DisBlock(nn.Module):
         self.downsample = downsample
         self.learnable_sc = (in_channels != out_channels) or downsample
         hidden_channels = in_channels if hidden_channels is None else hidden_channels
-        
+
         self.c1 = nn.Conv2d(in_channels, hidden_channels, kernel_size=self.ksize, padding=self.pad)
         self.c2 = nn.Conv2d(hidden_channels, out_channels, kernel_size=self.ksize, padding=self.pad)
         if args.d_spectral_norm:
             self.c1 = nn.utils.spectral_norm(self.c1)
             self.c2 = nn.utils.spectral_norm(self.c2)
-        
+
         if self.learnable_sc:
             self.c_sc = nn.Conv2d(in_channels, out_channels, kernel_size=1, padding=0)
             if args.d_spectral_norm:
                 self.c_sc = nn.utils.spectral_norm(self.c_sc)
-  
+
     def residual(self, x):
-      h = x
-      h = self.activation(h)
-      h = self.c1(h)
-      h = self.activation(h)
-      h = self.c2(h)
-      if self.downsample:
-          h = _downsample(h)
-      return h
-  
+        h = x
+        h = self.activation(h)
+        h = self.c1(h)
+        h = self.activation(h)
+        h = self.c2(h)
+        if self.downsample:
+            h = _downsample(h)
+        return h
+
     def shortcut(self, x):
         if self.learnable_sc:
             x = self.c_sc(x)
@@ -348,6 +347,6 @@ class DisBlock(nn.Module):
                 return x
         else:
             return x
-    
+
     def forward(self, x):
         return self.residual(x) + self.shortcut(x)

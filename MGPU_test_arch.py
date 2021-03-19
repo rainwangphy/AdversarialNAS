@@ -26,7 +26,7 @@ def main():
     # set visible GPU ids
     if len(args.gpu_ids) > 0:
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu_ids
-      
+
     # set TensorFlow environment for evaluation (calculate IS and FID)
     _init_inception()
     inception_path = check_or_download_inception('./tmp/imagenet/')
@@ -39,10 +39,10 @@ def main():
         if id >= 0:
             args.gpu_ids.append(id)
     if len(args.gpu_ids) > 1:
-      args.gpu_ids = args.gpu_ids[1:]
+        args.gpu_ids = args.gpu_ids[1:]
     else:
-      args.gpu_ids = args.gpu_ids
-    
+        args.gpu_ids = args.gpu_ids
+
     # genotype G
     genotypes_root = os.path.join('exps', args.genotypes_exp, 'Genotypes')
     genotype_G = np.load(os.path.join(genotypes_root, 'latest_G.npy'))
@@ -79,25 +79,25 @@ def main():
     args.path_helper = set_log_dir('exps', args.exp_name)
     logger = create_logger(args.path_helper['log_path'])
     logger.info(f'=> loaded checkpoint {checkpoint_file} (epoch {epoch})')
-    
+
     logger.info(args)
     writer_dict = {
         'writer': SummaryWriter(args.path_helper['log_path']),
         'valid_global_steps': epoch // args.val_freq,
     }
-    
+
     # model size
     logger.info('Param size of G = %fMB', count_parameters_in_MB(gen_net))
     logger.info('Param size of D = %fMB', count_parameters_in_MB(dis_net))
     print_FLOPs(basemodel_gen, (1, args.latent_dim), logger)
     print_FLOPs(basemodel_dis, (1, 3, args.img_size, args.img_size), logger)
-    
+
     # for visualization
     if args.draw_arch:
         from utils.genotype import draw_graph_G
         draw_graph_G(genotype_G, save=True, file_path=os.path.join(args.path_helper['graph_vis_path'], 'latest_G'))
     fixed_z = torch.cuda.FloatTensor(np.random.normal(0, 1, (100, args.latent_dim)))
-    
+
     # test
     load_params(gen_net, gen_avg_param)
     inception_score, std, fid_score = validate(args, fixed_z, fid_stat, gen_net, writer_dict)

@@ -1,4 +1,3 @@
-
 import os
 import torch
 import dateutil.tz
@@ -67,16 +66,19 @@ def save_checkpoint(states, is_best, output_dir,
     if is_best:
         torch.save(states, os.path.join(output_dir, 'checkpoint_best.pth'))
 
+
 def count_parameters_in_MB(model):
-  return np.sum(np.prod(v.size()) for name, v in model.named_parameters() if "auxiliary" not in name)/1e6
+    return np.sum(np.prod(v.size()) for name, v in model.named_parameters() if "auxiliary" not in name) / 1e6
+
 
 def record(filepath=None, Arch=None,
            best_IS=None, best_IS_epoch=None,
            best_fid=None, best_fid_epoch=None):
     with open(os.path.join(filepath, 'search_line.txt'), 'a') as f:
-        f.write('Arch_' + Arch+'_epoch' + ';'+
-                'best_IS '+ str(best_IS) + ',' + 'at_' + best_IS_epoch + '_epoch' + ';' +
+        f.write('Arch_' + Arch + '_epoch' + ';' +
+                'best_IS ' + str(best_IS) + ',' + 'at_' + best_IS_epoch + '_epoch' + ';' +
                 'best_fid ' + str(best_fid) + ',' + 'at_' + best_fid_epoch + '_epoch' + '\n')
+
 
 # draw the search line efficiently
 def early_stop(epoch, best_IS, best_fid):
@@ -97,6 +99,3 @@ def early_stop(epoch, best_IS, best_fid):
             return True
 
     return False
-
-
-
