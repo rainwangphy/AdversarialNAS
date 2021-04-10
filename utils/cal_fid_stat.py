@@ -2,8 +2,8 @@ import os
 import glob
 import argparse
 import numpy as np
-from scipy.misc import imread
-import tensorflow as tf
+from imageio import imread
+import tensorflow.compat.v1 as tf
 
 import utils.fid_score as fid
 

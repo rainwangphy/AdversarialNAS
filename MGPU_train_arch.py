@@ -20,6 +20,8 @@ from tensorboardX import SummaryWriter
 from tqdm import tqdm
 from copy import deepcopy
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "7"
+
 torch.backends.cudnn.enabled = True
 torch.backends.cudnn.benchmark = True
 
