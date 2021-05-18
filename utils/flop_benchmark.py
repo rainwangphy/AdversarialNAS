@@ -2,7 +2,8 @@
 # Copyright (c) Xuanyi Dong [GitHub D-X-Y], 2019 #
 ##################################################
 # modified from https://github.com/warmspringwinds/pytorch-segmentation-detection/blob/master/pytorch_segmentation_detection/utils/flops_benchmark.py
-import copy, torch
+import copy
+import torch
 
 
 def print_FLOPs(model, shape, logger):

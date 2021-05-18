@@ -8,8 +8,8 @@ import archs
 import datasets
 from network import train, validate, LinearLrDecay, load_params, copy_params
 from utils.utils import set_log_dir, save_checkpoint, create_logger, count_parameters_in_MB
-from utils.inception_score import _init_inception
-from utils.fid_score import create_inception_graph, check_or_download_inception
+# from utils.inception_score import _init_inception
+# from utils.fid_score import create_inception_graph, check_or_download_inception
 from utils.flop_benchmark import print_FLOPs
 
 import torch
@@ -35,9 +35,9 @@ def main():
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu_ids
 
     # set TensorFlow environment for evaluation (calculate IS and FID)
-    _init_inception()
-    inception_path = check_or_download_inception('./tmp/imagenet/')
-    create_inception_graph(inception_path)
+    # _init_inception()
+    # inception_path = check_or_download_inception('./tmp/imagenet/')
+    # create_inception_graph(inception_path)
 
     # the first GPU in visible GPUs is dedicated for evaluation (running Inception model)
     str_ids = args.gpu_ids.split(',')
@@ -74,7 +74,7 @@ def main():
             elif args.init_type == 'orth':
                 nn.init.orthogonal_(m.weight.data)
             elif args.init_type == 'xavier_uniform':
-                nn.init.xavier_uniform(m.weight.data, 1.)
+                nn.init.xavier_uniform_(m.weight.data, 1.)
             else:
                 raise NotImplementedError('{} unknown inital type'.format(args.init_type))
         elif classname.find('BatchNorm2d') != -1:
@@ -103,13 +103,13 @@ def main():
     dis_scheduler = LinearLrDecay(dis_optimizer, args.d_lr, 0.0, 0, max_iter_D)
 
     # fid stat
-    if args.dataset.lower() == 'cifar10':
-        fid_stat = 'fid_stat/fid_stats_cifar10_train.npz'
-    elif args.dataset.lower() == 'stl10':
-        fid_stat = 'fid_stat/stl10_train_unlabeled_fid_stats_48.npz'
-    else:
-        raise NotImplementedError(f'no fid stat for {args.dataset.lower()}')
-    assert os.path.exists(fid_stat)
+    # if args.dataset.lower() == 'cifar10':
+    #     fid_stat = 'fid_stat/fid_stats_cifar10_train.npz'
+    # elif args.dataset.lower() == 'stl10':
+    #     fid_stat = 'fid_stat/stl10_train_unlabeled_fid_stats_48.npz'
+    # else:
+    #     raise NotImplementedError(f'no fid stat for {args.dataset.lower()}')
+    # assert os.path.exists(fid_stat)
 
     # initial
     gen_avg_param = copy_params(gen_net)
@@ -169,35 +169,35 @@ def main():
         train(args, gen_net, dis_net, gen_optimizer, dis_optimizer,
               gen_avg_param, train_loader, epoch, writer_dict, lr_schedulers)
 
-        if epoch % args.val_freq == 0 or epoch == int(args.max_epoch_D) - 1:
-            backup_param = copy_params(gen_net)
-            load_params(gen_net, gen_avg_param)
-            inception_score, std, fid_score = validate(args, fixed_z, fid_stat, gen_net, writer_dict)
-            logger.info(f'Inception score mean: {inception_score}, Inception score std: {std}, '
-                        f'FID score: {fid_score} || @ epoch {epoch}.')
-            load_params(gen_net, backup_param)
-            if fid_score < best_fid:
-                best_fid = fid_score
-                is_best = True
-            else:
-                is_best = False
-        else:
-            is_best = False
+        # if epoch % args.val_freq == 0 or epoch == int(args.max_epoch_D) - 1:
+        #     backup_param = copy_params(gen_net)
+        #     load_params(gen_net, gen_avg_param)
+        #     # inception_score, std, fid_score = validate(args, fixed_z, fid_stat, gen_net, writer_dict)
+        #     logger.info(f'Inception score mean: {inception_score}, Inception score std: {std}, '
+        #                 f'FID score: {fid_score} || @ epoch {epoch}.')
+        #     load_params(gen_net, backup_param)
+        #     if fid_score < best_fid:
+        #         best_fid = fid_score
+        #         is_best = True
+        #     else:
+        #         is_best = False
+        # else:
+        #     is_best = False
 
         # save model
         avg_gen_net = deepcopy(gen_net)
         load_params(avg_gen_net, gen_avg_param)
-        save_checkpoint({
-            'epoch': epoch + 1,
-            'model': args.arch,
-            'gen_state_dict': gen_net.state_dict(),
-            'dis_state_dict': dis_net.state_dict(),
-            'avg_gen_state_dict': avg_gen_net.state_dict(),
-            'gen_optimizer': gen_optimizer.state_dict(),
-            'dis_optimizer': dis_optimizer.state_dict(),
-            'best_fid': best_fid,
-            'path_helper': args.path_helper
-        }, is_best, args.path_helper['ckpt_path'])
+        # save_checkpoint({
+        #     'epoch': epoch + 1,
+        #     'model': args.arch,
+        #     'gen_state_dict': gen_net.state_dict(),
+        #     'dis_state_dict': dis_net.state_dict(),
+        #     'avg_gen_state_dict': avg_gen_net.state_dict(),
+        #     'gen_optimizer': gen_optimizer.state_dict(),
+        #     'dis_optimizer': dis_optimizer.state_dict(),
+        #     'best_fid': best_fid,
+        #     'path_helper': args.path_helper
+        # }, is_best, args.path_helper['ckpt_path'])
         del avg_gen_net
 
 
